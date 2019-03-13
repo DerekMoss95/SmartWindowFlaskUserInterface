@@ -19,11 +19,11 @@
       <div class="results"> </div>
       <script>
           let weatherAPIResponse = '{{ response }}';
-          $(document).ready( //#A
+          $(document).ready(
             function updateWeather() {
               let doc = new DOMParser().parseFromString(weatherAPIResponse, 'text/html');
               $('.results').html(doc.firstChild.textContent);
-              setTimeout(updateWeather, 900000); //#E
+              setTimeout(updateWeather, 900000);
             });
       </script>
     </div>
