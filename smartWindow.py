@@ -1,6 +1,6 @@
 #!/usr/bin/evn python3
 from flask import Flask, url_for, request, render_template, redirect, session, escape
-import requests, json, serial, time
+import requests, json, serial, time, datetime
 
 app = Flask(__name__)
 
@@ -40,36 +40,58 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
     
-@app.route('/welcome', methods=['POST','GET'])
-def welcome():
-    if 'username' in session:
+@app.route('/weather', methods=['POST','GET'])
+def weather():
+    if request.method == 'GET':
         URL = 'http://api.openweathermap.org/data/2.5/weather?zip=84062'
         data = {'accept': 'application/json', 'apikey': '19c5d550c3114c28ad9abfde44856d17'}
         response = requests.get(url = URL, params = data)
         JSONresponse = response.json()
         stringResponse = json.dumps(JSONresponse)
         destructedResponse = json.loads(stringResponse)
-        output = "<div> City: " + destructedResponse.get('name') + "</div><br>"
+        print(destructedResponse)
+        output = "<div> Last time weather data received: " + datetime.datetime.now().strftime("%A, %B %d, %Y %I:%M %S %p") + "</div><br>"
+        kelvinTemp = destructedResponse.get('main')['temp']
+        farenheitTemp = kelvinTemp * (9/5) - 459.67
+        temp = str(farenheitTemp)
+        temp = temp[:5]
+        output += "<div> Current temperature: " + temp + " F</div><br>"
+        output += "<div> City: " + destructedResponse.get('name') + "</div><br>"
         output += "<div> Weather: " + destructedResponse['weather'][0]['main'] + "</div><br>"
+        weather = destructedResponse['weather'][0]['main']
+        #if weather == 'rain' or weather == 'snow':
+        #    print("Signaled window to close")
+        #    try:
+        #        right = str.encode("0")
+        #        ser.write(right)
+        #    except:
+        #        print("Input error, could not close window")
+        #        ser.write(str.encode('WRONG'))
+        return output
+        
+        
+@app.route('/welcome', methods=['POST','GET'])
+def welcome():
+    if 'username' in session:
         if request.method == 'POST':
             turn = request.form['turn']
-            if turn == 'left':
-                print("Prepared and fired " + turn)
+            if turn == 'open':
+                print("Signaled window to " + turn)
                 try:
                     left = str.encode("1")
                     ser.write(left)
                 except:
-                    print("Input error, please input a number")
+                    print("Input error, could not open window")
                     ser.write(str.encode('WRONG'))
-            if turn == 'right':
-                print("Prepared and fired " + turn)
+            if turn == 'close':
+                print("Signaled window to " + turn)
                 try:
                     right = str.encode("0")
                     ser.write(right)
                 except:
-                    print("Input error, please input a number")
+                    print("Input error, could not close window")
                     ser.write(str.encode('WRONG'))
-        return render_template('welcome.html', response = output)  # render a template
+        return render_template('welcome.html')  # render a template
     else:
         return "You need to log in to see the dashboard page. <br><a href = '/login'></b>" + \
         "Click here to log in</b></a>"

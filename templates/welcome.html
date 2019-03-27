@@ -15,21 +15,46 @@
       <p><a href="/">Home</a></p>
       <p><a href="/login">Login</a></p>
       <p><a href="/logout">Logout</a></p>
+      <h2>Do you want to open or close the window?</h2>
       <form action="" method="post">
-        <input type="submit" placeholder="left?" name="turn" value="left">Fire? </input>
-        <input type="submit" placeholder="right?" name="turn" value="right">Fire? </input>
+        <input type="submit" placeholder="left?" name="turn" value="open"></input>
+        <input type="submit" placeholder="right?" name="turn" value="close"></input>
         <!--<input class="btn btn-default" type="submit" value="/welcome"></input> -->
       </form>
       <h2>Current Weather Forecast</h2>
       <div class="results"> </div>
       <script>
           let weatherAPIResponse = '{{ response }}';
+          
           $(document).ready(
-            function updateWeather() {
-              let doc = new DOMParser().parseFromString(weatherAPIResponse, 'text/html');
-              $('.results').html(doc.firstChild.textContent);
-              setTimeout(updateWeather, 900000);
+            $.ajax({
+            url: '/weather',
+            dataType: 'text',
+            type: 'get',
+            success: function(e) {
+            $('.results').html(e);
+              },
+              error: function(e) {
+                $('.results').html('Error retrieving weather data');
+              },
+            })
+            );
+          
+          var goGetNewData = function() {
+            $.ajax({
+            url: '/weather',
+            dataType: 'text',
+            type: 'get',
+            success: function(e) {
+            $('.results').html(e);
+              },
+              error: function(e) {
+                $('.results').html('Error retrieving weather data');
+              },
             });
+          }
+          var waitTime = 600;  // 10 seconds
+          var fetchInterval = window.setInterval(goGetNewData, waitTime*1000);
       </script>
     </div>
   </body>
