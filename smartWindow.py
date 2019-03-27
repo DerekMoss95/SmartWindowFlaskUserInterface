@@ -1,7 +1,6 @@
 #!/usr/bin/evn python3
 from flask import Flask, url_for, request, render_template, redirect, session, escape
-import requests, json 
-import time
+import requests, json, serial, time
 
 app = Flask(__name__)
 
@@ -9,6 +8,8 @@ app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 response = {}
 
+ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=None)
+ser.flushInput()
 
 @app.route('/')
 def index():
@@ -39,7 +40,7 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
     
-@app.route('/welcome')
+@app.route('/welcome', methods=['POST','GET'])
 def welcome():
     if 'username' in session:
         URL = 'http://api.openweathermap.org/data/2.5/weather?zip=84062'
@@ -50,6 +51,24 @@ def welcome():
         destructedResponse = json.loads(stringResponse)
         output = "<div> City: " + destructedResponse.get('name') + "</div><br>"
         output += "<div> Weather: " + destructedResponse['weather'][0]['main'] + "</div><br>"
+        if request.method == 'POST':
+            turn = request.form['turn']
+            if turn == 'left':
+                print("Prepared and fired " + turn)
+                try:
+                    left = str.encode("1")
+                    ser.write(left)
+                except:
+                    print("Input error, please input a number")
+                    ser.write(str.encode('WRONG'))
+            if turn == 'right':
+                print("Prepared and fired " + turn)
+                try:
+                    right = str.encode("0")
+                    ser.write(right)
+                except:
+                    print("Input error, please input a number")
+                    ser.write(str.encode('WRONG'))
         return render_template('welcome.html', response = output)  # render a template
     else:
         return "You need to log in to see the dashboard page. <br><a href = '/login'></b>" + \
