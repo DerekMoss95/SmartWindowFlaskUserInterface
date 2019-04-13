@@ -68,7 +68,7 @@ def weather():
         #farenheitTemp = 35
         if fileContents == "yes":
             output += "<div> When the temperature falls below <b>40</b> degrees, it will close.</div><br>"
-            if weather == 'rain' or weather == 'snow' or farenheitTemp <= 40:
+            if weather == 'Rain' or weather == 'Snow' or farenheitTemp <= 40:
                 print("Signaled window to close")
                 try:
                     right = str.encode("0")
