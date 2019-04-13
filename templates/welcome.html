@@ -12,18 +12,28 @@
     <div class="container">
       <h1>Welcome to Your Smart Window Control interface!</h2>
       <br>
-      <p><a href="/">Home</a></p>
-      <p><a href="/login">Login</a></p>
-      <p><a href="/logout">Logout</a></p>
+      <span><a href="/">Home</a></span>
+      <span style="float:right"><a href="/login">Login</a> <a href="/logout">Logout</a></span>
       <h2>Do you want to open or close the window?</h2>
+      <div class="window"> </div>
+      <div class="autoWeather"> </div>
       <form action="" method="post">
         <input type="submit" placeholder="left?" name="turn" value="open"></input>
-        <input type="submit" placeholder="right?" name="turn" value="close"></input>
-        <!--<input class="btn btn-default" type="submit" value="/welcome"></input> -->
+        <input type="submit" placeholder="right?" name="turn" value="close"></input> <br><br>
+        Turn on automatic closing due to weather?
+        <input type="submit" placeholder="Turn on automatic closing due to weather?" name="turn" value="auto"></input>
       </form>
       <h2>Current Weather Forecast</h2>
       <div class="results"> </div>
+      <div class="weather"> </div>
+      <!--<form method="post" id="temp" action="http://localhost:5000/weather">
+      At what temperature would you like the window to close automatically?:
+        <input name="temp" ></input>
+        <input type="submit"></input>
+      </form>-->
+
       <script>
+        
           let weatherAPIResponse = '{{ response }}';
           
           $(document).ready(
@@ -32,29 +42,64 @@
             dataType: 'text',
             type: 'get',
             success: function(e) {
-            $('.results').html(e);
+            $('.weather').html(e);
               },
               error: function(e) {
-                $('.results').html('Error retrieving weather data');
+                $('.weather').html('Error retrieving weather data');
               },
             })
             );
+            
+          var goGetNewAutoWeatherData = function() {
+            $.ajax({
+            url: '/autoWeather',
+            dataType: 'text',
+            type: 'get',
+            success: function(e) {
+            $('.autoWeather').html(e);
+              },
+              error: function(e) {
+                $('.autoWeather').html('Error retrieving automatic weather choice');
+              },
+            });
+          }
+            
+          var goGetNewWindowData = function() {
+            $.ajax({
+            url: '/window',
+            dataType: 'text',
+            type: 'get',
+            success: function(e) {
+            $('.window').html(e);
+              },
+              error: function(e) {
+                $('.window').html('Error retrieving window data');
+              },
+            });
+          }
           
-          var goGetNewData = function() {
+          var goGetNewWeatherData = function() {
             $.ajax({
             url: '/weather',
             dataType: 'text',
             type: 'get',
             success: function(e) {
-            $('.results').html(e);
+            $('.weather').html(e);
               },
               error: function(e) {
-                $('.results').html('Error retrieving weather data');
+                $('.weather').html('Error retrieving weather data');
               },
             });
           }
-          var waitTime = 600;  // 10 seconds
-          var fetchInterval = window.setInterval(goGetNewData, waitTime*1000);
+          
+          
+          var weatherWaitTime = 600;  // 10 minutes
+          var windowWaitTime = 10;  // 10 seconds
+          var autoWeatherWaitTime = 10;  // 10 seconds
+          var fetchAutoWeatherInterval = window.setInterval(goGetNewAutoWeatherData, autoWeatherWaitTime*1000);
+          var fetchWeatherInterval = window.setInterval(goGetNewWeatherData, weatherWaitTime*1000);
+          var fetchWindowInterval = window.setInterval(goGetNewWindowData, windowWaitTime*1000);
+
       </script>
     </div>
   </body>

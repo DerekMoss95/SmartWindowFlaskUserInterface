@@ -1,12 +1,13 @@
 #!/usr/bin/evn python3
 from flask import Flask, url_for, request, render_template, redirect, session, escape
+from Crypto.Hash import SHA256
 import requests, json, serial, time, datetime
 
 app = Flask(__name__)
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
-response = {}
+requestedTemp = {"temp": 30}
 
 ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=None)
 ser.flushInput()
@@ -24,13 +25,14 @@ def index():
 def login():
     error = None
     if request.method == 'POST':
-        password = request.form['username']
-        username = request.form['password']
-        if username != 'admin' or password != 'admin':
+        username = request.form['username']
+        password = request.form['password']
+        encodedPassword = password.encode('utf-8')
+        encryptedPassword = SHA256.new(encodedPassword).hexdigest()
+        if username != 'derek' or encryptedPassword != '701fbfd68fbf2b9890d2d2bc8f61ded15153d9cbc5771376737d68ba9c1c9250':
             error = 'Invalid Credentials. Please try again.'
         else:
-            session['username'] = 'admin'
-            session['password'] = 'admin'
+            session['username'] = username
             return redirect(url_for('index'))
     return render_template('login.html', error=error)
 
@@ -59,17 +61,55 @@ def weather():
         output += "<div> City: " + destructedResponse.get('name') + "</div><br>"
         output += "<div> Weather: " + destructedResponse['weather'][0]['main'] + "</div><br>"
         weather = destructedResponse['weather'][0]['main']
-        #if weather == 'rain' or weather == 'snow':
-        #    print("Signaled window to close")
-        #    try:
-        #        right = str.encode("0")
-        #        ser.write(right)
-        #    except:
-        #        print("Input error, could not close window")
-        #        ser.write(str.encode('WRONG'))
+        fileRead = open("autoWeather.txt", "r")
+        fileContents = fileRead.read()
+        fileRead.close()
+        #weather = 'rain'
+        #farenheitTemp = 35
+        if fileContents == "yes":
+            output += "<div> When the temperature falls below <b>40</b> degrees, it will close.</div><br>"
+            if weather == 'rain' or weather == 'snow' or farenheitTemp <= 40:
+                print("Signaled window to close")
+                try:
+                    right = str.encode("0")
+                    ser.write(right)
+                except:
+                    print("Input error, could not close window")
+                    ser.write(str.encode('WRONG'))
         return output
-        
-        
+    else:
+        return "Couldn't connect to weather API"
+#    if request.method == 'POST':
+#        newTemp = request.form['temp']
+#        newTemp = int(newTemp)
+#        requestedTemp["temp"] = newTemp
+#        print(requestedTemp["temp"])
+#        return redirect(url_for('welcome'))
+
+
+@app.route('/window', methods=['POST','GET'])
+def window():
+    check = str.encode("2")
+    ser.write(check)
+    if request.method == 'GET':
+        if (ser.in_waiting > 0):
+            inputV = ser.readline()
+            inputV = str(inputV)
+            inputValue = "<div> Current window status: <b>" + inputV[2:-5] + "</b></div><br>"
+            return inputValue
+        else:
+            inputValue = "<div> Current window status: <strong> Error retrieving window data </strong></div><br>"
+            return inputValue
+            
+@app.route('/autoWeather', methods=['POST','GET'])
+def autoWeather():
+    if request.method == 'GET':
+        fileRead = open("autoWeather.txt", "r")
+        fileContents = fileRead.read()
+        fileRead.close()
+        contents = "<div> Weather based auto close status: <b>" + fileContents + "</b></div><br>"
+        return contents
+
 @app.route('/welcome', methods=['POST','GET'])
 def welcome():
     if 'username' in session:
@@ -91,6 +131,20 @@ def welcome():
                 except:
                     print("Input error, could not close window")
                     ser.write(str.encode('WRONG'))
+            if turn == 'auto':
+                fileRead = open("autoWeather.txt", "r")
+                fileContents = fileRead.read()
+                fileRead.close()
+                print(fileContents)
+                if fileContents == "yes":
+                    with open('autoWeather.txt', "w") as autoFile:
+                        autoFile.write("no")
+                    print("Changed user preference to no")
+                elif fileContents == "no":
+                    with open('autoWeather.txt', "w") as autoFile:
+                        autoFile.write("yes")
+                    print("Changed user preference to yes")
+        request.form = {}
         return render_template('welcome.html')  # render a template
     else:
         return "You need to log in to see the dashboard page. <br><a href = '/login'></b>" + \
