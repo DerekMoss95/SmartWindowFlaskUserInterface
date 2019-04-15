@@ -5,9 +5,7 @@ import requests, json, serial, time, datetime
 
 app = Flask(__name__)
 
-# Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
-requestedTemp = {"temp": 30}
 
 ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=None)
 ser.flushInput()
@@ -45,27 +43,29 @@ def logout():
 @app.route('/weather', methods=['POST','GET'])
 def weather():
     if request.method == 'GET':
-        URL = 'http://api.openweathermap.org/data/2.5/weather?zip=84062'
+        URL = 'http://api.openweathermap.org/data/2.5/weather?zip=84604'
         data = {'accept': 'application/json', 'apikey': '19c5d550c3114c28ad9abfde44856d17'}
         response = requests.get(url = URL, params = data)
         JSONresponse = response.json()
         stringResponse = json.dumps(JSONresponse)
         destructedResponse = json.loads(stringResponse)
         print(destructedResponse)
-        output = "<div> Last time weather data received: " + datetime.datetime.now().strftime("%A, %B %d, %Y %I:%M %S %p") + "</div><br>"
+        output = "<div> <b> Last time weather data received: </b>" + datetime.datetime.now().strftime("%A, %B %d, %Y %I:%M %S %p") + "</div><br>"
         kelvinTemp = destructedResponse.get('main')['temp']
         farenheitTemp = kelvinTemp * (9/5) - 459.67
+        #farenheitTemp = 35
         temp = str(farenheitTemp)
         temp = temp[:5]
-        output += "<div> Current temperature: " + temp + " F</div><br>"
-        output += "<div> City: " + destructedResponse.get('name') + "</div><br>"
-        output += "<div> Weather: " + destructedResponse['weather'][0]['main'] + "</div><br>"
         weather = destructedResponse['weather'][0]['main']
+        #weather = 'Clouds'
+        #weather = 'Rain'
+        city = destructedResponse.get('name')
+        output += "<div> <b> Current temperature: </b>" + temp + " F</div><br>"
+        output += "<div> <b> City: </b>" + city + "</div><br>"
+        output += "<div> <b> Weather: </b>" + weather + "</div><br>"
         fileRead = open("autoWeather.txt", "r")
         fileContents = fileRead.read()
         fileRead.close()
-        #weather = 'rain'
-        #farenheitTemp = 35
         if fileContents == "yes":
             output += "<div> When the temperature falls below <b>40</b> degrees, it will close.</div><br>"
             if weather == 'Rain' or weather == 'Snow' or farenheitTemp <= 40:
@@ -76,16 +76,10 @@ def weather():
                 except:
                     print("Input error, could not close window")
                     ser.write(str.encode('WRONG'))
+                request.form = {}
         return output
     else:
         return "Couldn't connect to weather API"
-#    if request.method == 'POST':
-#        newTemp = request.form['temp']
-#        newTemp = int(newTemp)
-#        requestedTemp["temp"] = newTemp
-#        print(requestedTemp["temp"])
-#        return redirect(url_for('welcome'))
-
 
 @app.route('/window', methods=['POST','GET'])
 def window():
@@ -95,10 +89,10 @@ def window():
         if (ser.in_waiting > 0):
             inputV = ser.readline()
             inputV = str(inputV)
-            inputValue = "<div> Current window status: <b>" + inputV[2:-5] + "</b></div><br>"
+            inputValue = "<div> <b> Current window status: </b>" + inputV[2:-5] + "</div><br>"
             return inputValue
         else:
-            inputValue = "<div> Current window status: <strong> Error retrieving window data </strong></div><br>"
+            inputValue = "<div> <b> Current window status: </b> Retrieving window data... </strong></div><br>"
             return inputValue
             
 @app.route('/autoWeather', methods=['POST','GET'])
@@ -107,7 +101,7 @@ def autoWeather():
         fileRead = open("autoWeather.txt", "r")
         fileContents = fileRead.read()
         fileRead.close()
-        contents = "<div> Weather based auto close status: <b>" + fileContents + "</b></div><br>"
+        contents = "<div> <b> Weather based auto close status: </b>" + fileContents + "</div><br>"
         return contents
 
 @app.route('/welcome', methods=['POST','GET'])
@@ -145,12 +139,11 @@ def welcome():
                         autoFile.write("yes")
                     print("Changed user preference to yes")
         request.form = {}
-        return render_template('welcome.html')  # render a template
+        return render_template('welcome.html')
     else:
         return "You need to log in to see the dashboard page. <br><a href = '/login'></b>" + \
         "Click here to log in</b></a>"
 
-# start the server with the 'run()' method
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
 
